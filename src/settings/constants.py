@@ -8,9 +8,10 @@ class Constants():
         # the number of betting rounds in the game
         self.streets_count = 2
 
-        self.suit_count = 4
-        self.rank_count = 13
+        self.suit_count = 2
+        self.rank_count = 3
         self.card_count = self.suit_count * self.rank_count
+        self.board_card_count = 1
 
         # IDs for each player and chance
         self.players = Players()

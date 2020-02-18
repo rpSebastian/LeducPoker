@@ -8,8 +8,10 @@ class CardToString():
         2c, 2d, 2h, 2s, 3c, 3d, 3h, 3s ... Ac, Ad, Ah, As
     """
     def __init__(self):
-        self.suit_table = list('cdhs')
-        self.rank_table = [str(i) for i in range(2, 10)] + list('TJQKA')
+        self.suit_table = list('cd')
+        self.rank_table = list('JQK')
+        # self.suit_table = list('cdhs')
+        # self.rank_table = [str(i) for i in range(2, 10)] + list('TJQKA')
         self.card_to_string_table = {}
         self.string_to_card_table = {}
         for card in range(constants.card_count):

@@ -1,14 +1,13 @@
 import context
 import unittest
 import torch
-from game.bet_sizing import bet_sizing
-from settings.arguments import arg
+from game import bet_sizing
+from settings import arg, constants
 from base import Node
-from settings.constants import constants
 
 
 class TestBetSizing(unittest.TestCase):
-
+    
     def test_get_possible_bets(self):
         node = Node()
         node.current_player = constants.players.P1
