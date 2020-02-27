@@ -1,7 +1,7 @@
 from settings import constants
 from game import bet_sizing, card_tools, card_to_string
 from base import Node
-from logs import logger
+import torch
 
 
 class PokerTreeBuilder():
@@ -14,13 +14,12 @@ class PokerTreeBuilder():
         root.bets = params.root_node.bets.clone()
         root.current_player = params.root_node.current_player
         root.board = params.root_node.board.clone()
-        self.num = 0
+        root.board_string = params.root_node.board_string
         self.build_tree_dfs(root)
         return root
 
     def build_tree_dfs(self, current_node):
-        self.num += 1
-        # logger.debug(current_node)
+        current_node.pot = torch.min(current_node.bets).item()
         children = self.get_children_nodes(current_node)
         current_node.children = children
         for child in children:
@@ -56,6 +55,7 @@ class PokerTreeBuilder():
         fold_node = Node(parent_node)
         fold_node.terminal = True
         fold_node.action = "fold"
+        fold_node.node_type = constants.node_types.terminal_fold
         children.append(fold_node)
 
         # P1 start check action
@@ -81,6 +81,7 @@ class PokerTreeBuilder():
             terminal_call_node = Node(parent_node)
             terminal_call_node.current_player = 1 - constants.players.P2
             terminal_call_node.terminal = True
+            terminal_call_node.node_type = constants.node_types.terminal_call
             terminal_call_node.bets[:] = terminal_call_node.bets.max()
             terminal_call_node.action = "call"
             children.append(terminal_call_node)

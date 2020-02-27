@@ -15,11 +15,17 @@ class CardToString():
         self.card_to_string_table = {}
         self.string_to_card_table = {}
         for card in range(constants.card_count):
-            rank = self.rank_table[card // constants.suit_count]
-            suit = self.suit_table[card % constants.suit_count]
+            rank = self.card_to_rank(card)
+            suit = self.card_to_suit(card)
             card_string = rank + suit
             self.card_to_string_table[card] = card_string
             self.string_to_card_table[card_string] = card
+
+    def card_to_rank(self, card):
+        return self.rank_table[card // constants.suit_count]
+
+    def card_to_suit(self, card):
+        return self.suit_table[card % constants.suit_count]
 
     def card_to_string(self, card):
         return self.card_to_string_table[card]

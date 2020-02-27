@@ -4,9 +4,9 @@ logger.remove()
 fmt="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
     "<level>{level}</level> | " \
     "<cyan>{file.path:}</cyan>:<cyan>{line:}</cyan> | " \
-    "<yellow>{process.name}</yellow> | " \
-    "-\n <level>{message}</level>"
-fmt = "<level>{message}</level>"
+    "- <level>{message}</level>"
+    # "<yellow>{process.name}</yellow> | " \
+# fmt = "<level>{message}</level>"
 logger.add(sys.stdout, format=fmt, level='DEBUG')
 logger.add("logs/runtime.log", format=fmt)
 # logger.add("file_1.log")

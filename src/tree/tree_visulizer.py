@@ -17,19 +17,22 @@ class TreeVisulizer():
         self.g.attr('node', shape='box')
         self.g.node(name=str(id), label=node.vis())
 
-    def draw_edge(self, child, par_id, cur_id):
+    def draw_edge(self, par, child, par_id, cur_id):
         self.g.edge(str(par_id), str(cur_id), label=child.action)
 
     def dfs(self, cur_node, par_id):
-        # if cur_node.current_player == constants.players.chance:
-        #     return
-        for child in cur_node.children:
+        if cur_node.current_player == constants.players.chance:
+            # self.cnt += 1
+            # if self.cnt > 1:
+            return
+        for i, child in enumerate(cur_node.children):
             self.total_id += 1
             self.draw_node(child, self.total_id)
-            self.draw_edge(child, par_id, self.total_id)
+            self.draw_edge(cur_node, child, par_id, self.total_id)
             self.dfs(child, self.total_id)
 
     def draw_tree(self, root):
+        self.cnt = 0
         self.total_id = 0
         self.g = Digraph('tree', format="png")
         self.draw_node(root, 0)
@@ -38,18 +41,3 @@ class TreeVisulizer():
 
 
 tree_visulizer = TreeVisulizer()
-
-# # 实例化一个Digraph对象(有向图)，name:生成的图片的图片名，format:生成的图片格式
-# dot = Digraph(name="MyPicture", comment="the test", format="png")
-
-# # 生成图片节点，name：这个节点对象的名称，label:节点名,color：画节点的线的颜色
-# dot.node(name='a', label='Ming', color='green')
-# dot.node(name='b', label='Hong', color='yellow')
-# dot.node(name='c', label='Dong')
-
-# # 在节点之间画线，label：线上显示的文本,color:线的颜色
-# dot.edge('a', 'b', label="ab\na-b", color='red')
-# # 一次性画多条线，c到b的线，a到c的线
-# dot.edges(['cb', 'ac'])
-
-# # 跟view一样的用法(render跟view选择一个即可)，一般用render生成图片，不使用view=True,view=True用在调试的时候

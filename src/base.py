@@ -10,10 +10,21 @@ class Node():
         self.street = None
         self.current_player = None
         self.bets = None
+        self.pot = None
         self.terminal = False
         self.num_bets = 0
         self.children = None
         self.action = None
+        self.node_type = None
+
+        self.cfv = None  # [PC, CC]
+        self.range = None  # [PC, CC]
+        self.strategy = None  # [AC, CC]
+        self.regret = None  # [PC, CC]
+        self.strategy_weight_sum = None  # [AC, CC]
+        self.average_strategy = None  # [AC, CC]
+        self.br_cfv = None  # [PC, CC]
+        self.exploitability = None
 
         self.init = 1
         if parent_node is not None:
@@ -25,9 +36,13 @@ class Node():
             self.num_bets = parent_node.num_bets
 
     def vis(self):
-        return "board = {}\nstreet = {}\nplayer = {}\nbets = [{}, {}]\nterm = {}".format(
-            self.board_string, self.street, self.current_player, self.bets[0].item(), self.bets[1].item(), self.terminal
+        outputs = "board = {}\nstreet = {}\nplayer = {}\nbets = [{}, {}]\npot = {}\nterm = {}\n".format(
+            self.board_string, self.street, self.current_player, self.bets[0].item(), self.bets[1].item(), self.pot, self.terminal
         )
+        outputs += "cfv = {}\nrange = {}\nstrategy={}\nregret={}\nave_strategy={}\nbr_cfv={}\nexp={}\n".format(
+            self.cfv, self.range, self.strategy, self.regret, self.average_strategy, self.br_cfv, self.exploitability
+        )
+        return outputs
 
     def __str__(self):
         return "board = {}, street = {}, player = {}, bets = [{}, {}], term = {}".format(

@@ -20,7 +20,6 @@ class TestCardToString(unittest.TestCase):
         children = tree_builder.get_children_player_nodes(node)
         for child in children:
             pass
-            # print(child)
 
     def test_get_children_chance_nodes(self):
         node = Node()
@@ -33,7 +32,6 @@ class TestCardToString(unittest.TestCase):
         children = tree_builder.get_children_chance_nodes(node)
         for child in children:
             pass
-            # print(child)
 
     def test_build_tree(self):
         params = TreeParams()

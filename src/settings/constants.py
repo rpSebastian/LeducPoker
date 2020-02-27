@@ -10,8 +10,9 @@ class Constants():
 
         self.suit_count = 2
         self.rank_count = 3
+        self.hand_count = 1
         self.card_count = self.suit_count * self.rank_count
-        self.board_card_count = 1
+        self.board_card_count = [0, 1]
 
         # IDs for each player and chance
         self.players = Players()

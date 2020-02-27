@@ -1,0 +1,1 @@
+scp a:/home/xuhang/LeducPoker/data/images/tree.png ./data/images
