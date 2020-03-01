@@ -26,6 +26,9 @@ class Node():
         self.br_cfv = None  # [PC, CC]
         self.exploitability = None
 
+        self.reach_prop = None  # [PC, CC]
+        self.estimate_value = None  # [AC, CC]
+
         self.init = 1
         if parent_node is not None:
             self.board = parent_node.board

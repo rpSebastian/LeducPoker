@@ -4,33 +4,31 @@ from game import TerminalEquity, card_tools
 from logs import logger
 
 
-class TreeCFR():
+class TreeValue():
     def __init__(self):
         self.terminal_equity_cache = {}
 
-    def run_cfr(self, root, starting_ranges):
-        self.cfr_init_dfs(root)
+    def compute_values(self, root, starting_ranges):
+        self.init_dfs(root)
         root.range = starting_ranges
-        for iter in range(arg.cfr_iters):
-            self.compute_ranges(root)
-            self.compute_average_strategies(root)
-            self.compute_cfvs(root)
-            self.compute_regrets(root)
-            self.compute_current_strategies(root)
+        root.reach_prop = torch.ones_like(root.range)
+        self.compute_ranges(root)
+        self.compute_reach_prop(root)
+        self.compute_cfvs(root)
+        self.compute_br_cfvs(root)
+        self.compute_estimate_value(root)
+        exploitability = torch.mean(torch.sum(root.br_cfv * root.range, dim=1))
+        match_result = torch.mean(root.cfv * root.range, dim=1)
+        logger.info('exploitability = {}, match_result = {}', exploitability, match_result)
 
-            self.compute_ranges(root, turn="eval")
-            self.compute_br_cfvs(root)
-            self.compute_exploitabily(root)
-            logger.debug("iter = {}, exploitability = {}", iter, root.exploitability)
-
-    def compute_ranges(self, node, turn="train"):
+    def compute_ranges(self, node):
         if node.terminal:
             return
         PC, AC, CC = constants.players_count, len(node.children), constants.card_count
         CP, OP = node.current_player, 1 - node.current_player
         children_ranges = torch.zeros([PC, AC, CC], dtype=arg.dtype).to(arg.device)
         ranges_expand = node.range.repeat(AC, 1, 1).transpose(0, 1)
-        strategy = node.strategy if turn == "train" else node.average_strategy
+        strategy = node.strategy
         if CP == constants.players.chance:
             children_ranges[0] = ranges_expand[0] * strategy
             children_ranges[1] = ranges_expand[1] * strategy
@@ -39,7 +37,7 @@ class TreeCFR():
             children_ranges[OP] = ranges_expand[OP]
         for i, child in enumerate(node.children):
             child.range = children_ranges[:, i, :]
-            self.compute_ranges(child, turn)
+            self.compute_ranges(child)
 
     def compute_cfvs(self, node):
         PC, AC, CC = constants.players_count, len(node.children), constants.card_count
@@ -67,43 +65,6 @@ class TreeCFR():
                 node.cfv[OP] = torch.sum(children_cfvs[:, OP, :], dim=0)
                 node.cfv[CP] = torch.sum(node.strategy * children_cfvs[:, CP, :], dim=0)
 
-    def compute_regrets(self, node):
-        if node.terminal:
-            return
-        AC, CC = len(node.children), constants.card_count
-        CP = node.current_player
-        children_player_cfvs = torch.zeros([AC, CC], dtype=arg.dtype).to(arg.device)
-        for i, child in enumerate(node.children):
-            self.compute_regrets(child)
-            children_player_cfvs[i] = child.cfv[CP]
-        current_regret = children_player_cfvs - node.cfv[CP, :].repeat(AC, 1)
-        node.regret += current_regret
-        node.regret[node.regret < 1e-9] = 1e-9
-
-    def compute_current_strategies(self, node):
-        if node.terminal:
-            return
-        CP = node.current_player
-        if CP != constants.players.chance:
-            positive_regret = node.regret.clone()
-            positive_regret[positive_regret < 1e-9] = 1e-9
-            node.strategy = positive_regret / torch.sum(positive_regret, dim=0)
-        for child in node.children:
-            self.compute_current_strategies(child)
-
-    def compute_average_strategies(self, node):
-        if node.terminal:
-            return
-        AC, CP = len(node.children), node.current_player
-        if CP != constants.players.chance:
-            weight = node.range[CP].repeat(AC, 1).clone()
-            weight[weight < 1e-9] = 1e-9
-            node.strategy_weight_sum += weight
-            weight /= node.strategy_weight_sum
-            node.average_strategy = node.average_strategy * (1 - weight) + node.strategy * weight
-        for child in node.children:
-            self.compute_average_strategies(child)
-
     def compute_br_cfvs(self, node):
         PC, AC, CC = constants.players_count, len(node.children), constants.card_count
         CP, OP = node.current_player, 1 - node.current_player
@@ -130,40 +91,44 @@ class TreeCFR():
                 node.br_cfv[OP] = torch.sum(children_br_cfvs[:, OP, :], dim=0)
                 node.br_cfv[CP] = torch.max(children_br_cfvs[:, CP, :], dim=0).values
 
-    def compute_exploitabily(self, node):
-        node.exploitability = torch.mean(torch.sum(node.br_cfv * node.range, dim=1))
-        for child in node.children:
-            self.compute_exploitabily(child)
-
-    def cfr_init_dfs(self, node):
+    def compute_reach_prop(self, node):
+        if node.terminal:
+            return
         PC, AC, CC = constants.players_count, len(node.children), constants.card_count
-        node.cfv = torch.zeros([PC, CC], dtype=arg.dtype).to(arg.device)
-        node.br_cfv = torch.zeros([PC, CC], dtype=arg.dtype).to(arg.device)
-        node.range = torch.zeros([PC, CC], dtype=arg.dtype).to(arg.device)
-        node.regret = torch.zeros([AC, CC], dtype=arg.dtype).to(arg.device)
-        node.strategy_weight_sum = torch.zeros([AC, CC], dtype=arg.dtype).to(arg.device)
-        if node.current_player == constants.players.chance:
-            self.fill_chance_strategy(node)
+        CP, OP = node.current_player, 1 - node.current_player
+        children_reach_prop = torch.zeros([PC, AC, CC], dtype=arg.dtype).to(arg.device)
+        reach_prop_expand = node.reach_prop.repeat(AC, 1, 1).transpose(0, 1)
+        strategy = node.strategy
+        if CP == constants.players.chance:
+            children_reach_prop[0] = reach_prop_expand[0]
+            children_reach_prop[1] = reach_prop_expand[1]
         else:
-            self.fill_player_strategy(node)
-        node.average_strategy = node.strategy.clone()
-        for child in node.children:
-            self.cfr_init_dfs(child)
-
-    def fill_chance_strategy(self, node):
-        action_count = len(node.children)
-        node.strategy = torch.ones([action_count, constants.card_count], dtype=arg.dtype).to(arg.device)
+            children_reach_prop[CP] = reach_prop_expand[CP]
+            children_reach_prop[OP] = reach_prop_expand[OP] * strategy
         for i, child in enumerate(node.children):
-            mask = card_tools.get_possible_hand_index(child.board)
-            node.strategy[i] = node.strategy[i] * mask / (constants.card_count - 2)
+            child.reach_prop = children_reach_prop[:, i, :]
+            self.compute_reach_prop(child)
 
-    def fill_player_strategy(self, node):
-        action_count = len(node.children)
-        node.strategy = torch.ones([action_count, constants.card_count], dtype=arg.dtype).to(arg.device)
-        node.strategy /= action_count
+    def compute_estimate_value(self, node):
+        if node.terminal:
+            return
+        CP, AC, CC = node.current_player, len(node.children), constants.card_count
+        node.estimate_value = torch.zeros([AC, CC], dtype=arg.dtype).to(arg.device)
+        for i, child in enumerate(node.children):
+            node.estimate_value[i] = child.cfv[CP] * child.reach_prop[CP]
+        for child in node.children:
+            self.compute_estimate_value(child)
 
     def get_terminal_equity(self, node):
         if node.board not in self.terminal_equity_cache:
             self.terminal_equity_cache[node.board] = TerminalEquity()
             self.terminal_equity_cache[node.board].set_board(node.board)
         return self.terminal_equity_cache[node.board]
+
+    def init_dfs(self, node):
+        PC, CC = constants.players_count, constants.card_count
+        node.cfv = torch.zeros([PC, CC], dtype=arg.dtype).to(arg.device)
+        node.br_cfv = torch.zeros([PC, CC], dtype=arg.dtype).to(arg.device)
+        node.range = torch.zeros([PC, CC], dtype=arg.dtype).to(arg.device)
+        for child in node.children:
+            self.init_dfs(child)

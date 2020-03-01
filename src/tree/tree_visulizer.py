@@ -22,8 +22,6 @@ class TreeVisulizer():
 
     def dfs(self, cur_node, par_id):
         if cur_node.current_player == constants.players.chance:
-            # self.cnt += 1
-            # if self.cnt > 1:
             return
         for i, child in enumerate(cur_node.children):
             self.total_id += 1

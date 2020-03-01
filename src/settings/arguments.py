@@ -9,9 +9,9 @@ class Arguments():
         self.Tensor = torch.FloatTensor
         self.IntTensor = torch.Tensor
         self.device = torch.device("cuda:0") if self.gpu else torch.device("cpu")
-        self.bet_sizing = [200, 400]
+        self.bet_sizing = [2, 4]
         self.bet_limits = [2, 2]
-        self.cfr_iters = 2000
+        self.cfr_iters = 3000
 
 
 arg = Arguments()
