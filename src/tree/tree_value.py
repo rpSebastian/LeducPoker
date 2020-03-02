@@ -13,7 +13,6 @@ class TreeValue():
         root.range = starting_ranges
         root.reach_prop = torch.ones_like(root.range)
         self.compute_ranges(root)
-        self.compute_reach_prop(root)
         self.compute_cfvs(root)
         self.compute_br_cfvs(root)
         self.compute_estimate_value(root)
@@ -91,31 +90,13 @@ class TreeValue():
                 node.br_cfv[OP] = torch.sum(children_br_cfvs[:, OP, :], dim=0)
                 node.br_cfv[CP] = torch.max(children_br_cfvs[:, CP, :], dim=0).values
 
-    def compute_reach_prop(self, node):
-        if node.terminal:
-            return
-        PC, AC, CC = constants.players_count, len(node.children), constants.card_count
-        CP, OP = node.current_player, 1 - node.current_player
-        children_reach_prop = torch.zeros([PC, AC, CC], dtype=arg.dtype).to(arg.device)
-        reach_prop_expand = node.reach_prop.repeat(AC, 1, 1).transpose(0, 1)
-        strategy = node.strategy
-        if CP == constants.players.chance:
-            children_reach_prop[0] = reach_prop_expand[0]
-            children_reach_prop[1] = reach_prop_expand[1]
-        else:
-            children_reach_prop[CP] = reach_prop_expand[CP]
-            children_reach_prop[OP] = reach_prop_expand[OP] * strategy
-        for i, child in enumerate(node.children):
-            child.reach_prop = children_reach_prop[:, i, :]
-            self.compute_reach_prop(child)
-
     def compute_estimate_value(self, node):
         if node.terminal:
             return
         CP, AC, CC = node.current_player, len(node.children), constants.card_count
         node.estimate_value = torch.zeros([AC, CC], dtype=arg.dtype).to(arg.device)
         for i, child in enumerate(node.children):
-            node.estimate_value[i] = child.cfv[CP] * child.reach_prop[CP]
+            node.estimate_value[i] = child.cfv[CP] * child.range[CP]
         for child in node.children:
             self.compute_estimate_value(child)
 

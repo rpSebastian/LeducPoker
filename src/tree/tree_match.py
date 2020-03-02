@@ -1,3 +1,4 @@
+
 import os
 import torch
 from settings import constants, arg
@@ -10,7 +11,7 @@ from scipy import stats
 
 class TreeMatch():
     def __init__(self):
-        self.match_nums = 100000
+        self.match_nums = 1000000
         self.terminal_equity_cache = {}
 
     def match(self, root):
@@ -131,12 +132,12 @@ class TreeMatch():
         return len(strategy) - 1
 
     def compute_correction_item(self, node, action):
-        reach_prop_children = torch.zeros_like(node.estimate_value)
+        range_children = torch.zeros_like(node.estimate_value)
         for i, child in enumerate(node.children):
-            reach_prop_children[i] = child.reach_prop[node.current_player]
-        correction_item = torch.mean(node.estimate_value * reach_prop_children / torch.sum(reach_prop_children))
-        correction_item -= torch.mean(node.estimate_value[action, :] * reach_prop_children[action, :] /
-                                      torch.sum(reach_prop_children[action, :]))
+            range_children[i] = child.range[node.current_player]
+        correction_item = torch.sum(node.estimate_value * range_children / torch.sum(range_children))
+        correction_item -= torch.sum(node.estimate_value[action, :] * range_children[action, :] /
+                                      torch.sum(range_children[action, :]))
         return correction_item
 
     def run_match_using_AIVAT(self, node, my_pos, opp_pos, my_card, opp_card, public_card):
@@ -165,13 +166,13 @@ class TreeMatch():
             equity_matrix = terminal_equity.call_matrix
         elif node.node_type == constants.node_types.terminal_fold:
             equity_matrix = terminal_equity.fold_matrix
-        
-        base_value = torch.mean(equity_matrix[:, opp_card] * reach_prop[:] / torch.sum(reach_prop[:])) * node.pot
-        
+
+        # 减去对手的手牌概率，以消除双方手牌的冲突
+        base_value = torch.sum(equity_matrix[:, opp_card] * reach_prop[:] / (torch.sum(reach_prop[:]) - reach_prop[opp_card])) * node.pot
         if node.node_type == constants.node_types.terminal_fold and node.current_player == opp_pos:
             base_value = -base_value
-        result = base_value
-        # result = correction_items
+
+        result = base_value + correction_items
         result2 = self.compute_utility(node, my_pos, opp_pos, my_card, opp_card, public_card)
         return result, result2
 

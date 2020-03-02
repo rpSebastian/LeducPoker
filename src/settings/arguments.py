@@ -13,5 +13,8 @@ class Arguments():
         self.bet_limits = [2, 2]
         self.cfr_iters = 3000
 
+        self.board_string = ""
+        self.street = 0
+
 
 arg = Arguments()

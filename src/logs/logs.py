@@ -8,7 +8,7 @@ fmt="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | " \
     # "<yellow>{process.name}</yellow> | " \
 # fmt = "<level>{message}</level>"
 logger.add(sys.stdout, format=fmt, level='DEBUG')
-logger.add("logs/runtime.log", format=fmt)
+# logger.add("logs/runtime.log", format=fmt)
 # logger.add("file_1.log")
 # @logger.catch
 # def my_function(x, y, z):

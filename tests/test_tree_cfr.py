@@ -8,9 +8,9 @@ from tree import tree_builder, TreeCFR, tree_visulizer, tree_strategy_sl
 
 params = TreeParams()
 params.root_node = Node()
-params.root_node.board = card_to_string.string_to_cards('')
-params.root_node.board_string = ''
-params.root_node.street = 0
+params.root_node.board_string = arg.board_string
+params.root_node.board = card_to_string.string_to_cards(arg.board_string)
+params.root_node.street = arg.street
 params.root_node.current_player = constants.players.P1
 params.root_node.bets = arg.IntTensor([100, 100]).to(arg.device)
 root = tree_builder.build_tree(params)
